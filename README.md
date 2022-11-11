@@ -1,3 +1,19 @@
+
+## What's different? <br>
+This is suit to cartesian bedslingers. This was originally designed for Euclid and Klippy type sensors and CoreXY's, and then adapted to be used with a bltouch. But I'm on an Ender 3 and I can't move the toolhead in Y. So I've designed an adapter to relocate the Z endstop and turn it into a pin endstop. And troubleshooting some of the differences.
+
+  ## New Requirements:
+  1) Physical Z-Endstop mounted as a pin - it is our reference point and is always Z 0.0 for calculations.
+  2) BLTouch as probe - the sensor to check the distance between endstop and bed to calc the offset
+  3) Accurate X and Y probe offsets
+  
+  ## Notes:
+   Your BLTouch and Nozzle should have litte to no offset in the Y position. We won't be able to move Y to find the Z-Endpin on a Bedslinger
+    unless you mount the switch to the bed. But that requires cable management and addressing bed heat. Possible, Better, But not free!
+   The bigger the offset, the bigger the pin has to be. Your Nozzle and BLTouch have to both be able to touch the pin off of the bed so
+    
+
+## Original:<br>
 ## This is a Klipper plugin for an auto calibration Z offset with a BLTouch (or possible inductive probe - check hints first!)
 
 ## Why:<br>
