@@ -1,6 +1,6 @@
 
 ## What's different? <br>
-This is suit to cartesian bedslingers. This was originally designed for Euclid and Klippy type sensors and CoreXY's, and then adapted to be used with a bltouch. But I'm on an Ender 3 and I can't move the toolhead in Y. So I've designed an adapter to relocate the Z endstop and turn it into a pin endstop. And troubleshooting some of the differences.
+This is suited to cartesian bedslingers. This was originally designed for Euclid and Klippy type sensors and CoreXY's, and then adapted to be used with a bltouch. But I'm on an Ender 3 and I can't move the toolhead in Y. So I've designed an adapter to relocate the Z endstop and turn it into a pin endstop. And troubleshooting some of the differences.
 
   ## New Requirements:
   1) Physical Z-Endstop mounted as a pin - it is our reference point and is always Z 0.0 for calculations.
