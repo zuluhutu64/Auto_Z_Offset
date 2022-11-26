@@ -11,6 +11,27 @@ This is suited to cartesian bedslingers. This was originally designed for Euclid
    Your BLTouch and Nozzle should have litte to no offset in the Y position. We won't be able to move Y to find the Z-Endpin on a Bedslinger
     unless you mount the switch to the bed. But that requires cable management and addressing bed heat. Possible, Better, But not free!
    The bigger the offset, the bigger the pin has to be. Your Nozzle and BLTouch have to both be able to touch the pin off of the bed so
+   
+   ## Installation:
+
+      Login to your pi by ssh. Clone the repo to your homefolder with this command:
+
+        <pre><code>
+        git clone https://github.com/skyshadex/auto_offset_z.git<br>
+        cd ~/auto_offset_z<br>
+        ./install.sh<br>
+        </code></pre>
+
+For further updates you can add it to moonraker's updated manager:
+
+<pre><code>
+[update_manager auto_offset_z]
+type: git_repo
+path: ~/auto_offset_z
+origin: https://github.com/skyshadex/auto_offset_z.git
+install_script: install.sh
+</code></pre>
+
     
 
 ## Original:<br>
@@ -65,25 +86,6 @@ endstop_max: 0                  # Optional - by default disabled (0) - used as f
 offsetadjust: 0.0               # Manual offset correction option - start with zero and optimize during print with babysteps
                                   1) If you need to lower the nozzle from -0.71 to -0.92 for example your value is -0.21.
                                   2) If you need to move more away from bed add a positive value.
-</code></pre>
-## Installation:
-
-Login to your pi by ssh. Clone the repo to your homefolder with this command:
-
-<pre><code>
-git clone https://github.com/hawkeyexp/auto_offset_z.git<br>
-cd ~/auto_offset_z<br>
-./install.sh<br>
-</code></pre>
-
-For further updates you can add it to moonraker's updated manager:
-
-<pre><code>
-[update_manager auto_offset_z]
-type: git_repo
-path: ~/auto_offset_z
-origin: https://github.com/hawkeyexp/auto_offset_z.git
-install_script: install.sh
 </code></pre>
 
 ## Hints for use with an inductive probe:
