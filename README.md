@@ -16,11 +16,11 @@ This is suited to cartesian bedslingers. This was originally designed for Euclid
 
       Login to your pi by ssh. Clone the repo to your homefolder with this command:
 
-        <pre><code>
-        git clone https://github.com/skyshadex/auto_offset_z.git<br>
-        cd ~/auto_offset_z<br>
-        ./install.sh<br>
-        </code></pre>
+        
+        git clone https://github.com/skyshadex/auto_z_offset.git
+        cd ~/auto_offset_z
+        ./install.sh
+        
 
 For further updates you can add it to moonraker's updated manager:
 
@@ -28,7 +28,7 @@ For further updates you can add it to moonraker's updated manager:
 [update_manager auto_offset_z]
 type: git_repo
 path: ~/auto_offset_z
-origin: https://github.com/skyshadex/auto_offset_z.git
+origin: https://github.com/skyshadex/auto_z_offset.git
 install_script: install.sh
 </code></pre>
 
