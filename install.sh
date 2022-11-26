@@ -12,8 +12,8 @@ else
    echo "Klipper detected - let's go ..."
 fi
 
-if [ ! -d ~/auto_offset_z ]; then
-   echo -e "AUTO_OFFSET_Z is missing - aborting ..."
+if [ ! -d ~/Auto_Z_Offset ]; then
+   echo -e "Directory Auto_Z_Offset is missing - aborting ..."
    exit 1
 else
    echo -e "AUTO_OFFSET_Z - let's go ..."
