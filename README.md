@@ -18,7 +18,7 @@ This is suited to cartesian bedslingers. This was originally designed for Euclid
 
         
         git clone https://github.com/skyshadex/auto_z_offset.git
-        cd ~/auto_offset_z
+        cd ~/auto_z_offset
         ./install.sh
         
 
@@ -27,7 +27,7 @@ For further updates you can add it to moonraker's updated manager:
 <pre><code>
 [update_manager auto_offset_z]
 type: git_repo
-path: ~/auto_offset_z
+path: ~/auto_z_offset
 origin: https://github.com/skyshadex/auto_z_offset.git
 install_script: install.sh
 </code></pre>
