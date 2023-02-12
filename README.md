@@ -17,9 +17,9 @@ This is a fork of [SkyShadex's Auto_Z_Offset](https://github.com/SkyShadex/Auto_
       Login to your pi by ssh. Clone the repo to your homefolder with this command:
 
         
-        git clone https://github.com/skyshadex/auto_z_offset.git
-        cd ~/auto_z_offset
-        ./install.sh
+        cd /home/pi
+        git clone https://github.com/disPaw/Auto_Z_Offset.git
+        ./auto_z_offset/install.sh
         
 
 For further updates you can add it to moonraker's updated manager:
@@ -28,8 +28,9 @@ For further updates you can add it to moonraker's updated manager:
 [update_manager auto_offset_z]
 type: git_repo
 path: ~/auto_z_offset
-origin: https://github.com/skyshadex/auto_z_offset.git
+origin: https://github.com/disPaw/Auto_Z_Offset.git
 install_script: install.sh
+managed_services: klipper
 </code></pre>
 
     
