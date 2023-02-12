@@ -1,6 +1,6 @@
 
-## What's different? <br>
-This is suited to cartesian bedslingers. This was originally designed for Euclid and Klippy type sensors and CoreXY's, and then adapted to be used with a bltouch. But I'm on an Ender 3 and I can't move the toolhead in Y. So I've designed an adapter to relocate the Z endstop and turn it into a pin endstop. And troubleshooting some of the differences.
+## What's Different? <br>
+This is a fork of [SkyShadex's Auto_Z_Offset](https://github.com/SkyShadex/Auto_Z_Offset) adaptation for the Ender 3 with BLTouch. . . which is a fork of [hawkeyexp's auto_offset_z](https://github.com/hawkeyexp/auto_offset_z) for CoreXY printers with BLTouch. . . which is probably forked from elsewhere, too. At any rate, I noticed the install.sh file might benefit from removal of Moonraker dummy services like [Protoloft's klipper_z_calibration](https://github.com/protoloft/klipper_z_calibration#moonraker-update-manager).
 
   ## New Requirements:
   1) Physical Z-Endstop mounted as a pin - it is our reference point and is always Z 0.0 for calculations.
