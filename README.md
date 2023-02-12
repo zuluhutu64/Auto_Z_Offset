@@ -13,8 +13,7 @@ This is a fork of [SkyShadex's Auto_Z_Offset](https://github.com/SkyShadex/Auto_
    The bigger the offset, the bigger the pin has to be. Your Nozzle and BLTouch have to both be able to touch the pin off of the bed so
    
    ## Installation:
-
-      Login to your pi by ssh. Clone the repo to your homefolder with this command:
+Login to your pi by ssh. Clone the repo to your homefolder with this command:
 
         
         cd /home/pi
