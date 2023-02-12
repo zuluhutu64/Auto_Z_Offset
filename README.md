@@ -18,7 +18,8 @@ Login to your pi by ssh. Clone the repo to your homefolder with this command:
         
         cd /home/pi
         git clone https://github.com/disPaw/Auto_Z_Offset.git
-        ./auto_z_offset/install.sh
+        cd ~/Auto_Z_Offset
+        ./install.sh
         
 
 For further updates you can add it to moonraker's updated manager:
