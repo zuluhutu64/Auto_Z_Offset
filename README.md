@@ -27,7 +27,7 @@ For further updates you can add it to moonraker's updated manager:
 <pre><code>
 [update_manager auto_offset_z]
 type: git_repo
-path: ~/auto_z_offset
+path: ~/Auto_Z_Offset
 origin: https://github.com/disPaw/Auto_Z_Offset.git
 install_script: install.sh
 managed_services: klipper
