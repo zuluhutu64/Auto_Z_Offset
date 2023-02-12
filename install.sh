@@ -1,40 +1,76 @@
 #!/bin/bash
+KLIPPER_PATH="${HOME}/klipper"
+SYSTEMDDIR="/etc/systemd/system"
 
-if [ ${UID} == '0' ]; then
-    echo -e "Don't run this script as root! - aborting ..."
-    exit 1
-fi
+# Step 1:  Verify Klipper has been installed
+check_klipper()
+{
+    if [ "$(sudo systemctl list-units --full -all -t service --no-legend | grep -F "klipper.service")" ]; then
+        echo "Klipper service found!"
+    else
+        echo "Klipper service not found, please install Klipper first"
+        exit -1
+    fi
 
-if [ ! -d ~/klipper ]; then
-   echo -e "Klipper must be installed on your system - aborting ..."
-   exit 1
-else
-   echo "Klipper detected - let's go ..."
-fi
+}
 
-if [ ! -d ~/Auto_Z_Offset ]; then
-   echo -e "Directory Auto_Z_Offset is missing - aborting ..."
-   exit 1
-else
-   echo -e "AUTO_OFFSET_Z - let's go ..."
-   rm -f ~/klipper/klippy/extras/auto_offset_z.py 2>&1>/dev/null
-   ln -s ~/Auto_Z_Offset/auto_offset_z.py ~/klipper/klippy/extras/auto_offset_z.py
-   sudo /bin/sh -c "cat > /etc/systemd/system/auto_offset_z.service" << EOF
-[Unit]
-Description=Dummy Service for auto_offset_z plugin
-After=klipper.service
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/bin/sleep 1
-ExecStartPost=/usr/sbin/service klipper restart
-[Install]
-WantedBy=multi-user.target
-EOF
-   sudo systemctl daemon-reload
-   sudo systemctl enable auto_offset_z
-   sudo systemctl restart auto_offset_z
-   echo -e "done."
-fi
+# Step 2: link extension to Klipper
+link_extension()
+{
+    echo "Linking extension to Klipper..."
+    ln -sf "${SRCDIR}/auto_offset_z.py" "${KLIPPER_PATH}/klippy/extras/auto_offset_z.py"
+}
 
-exit 0
+# Step 3: Remove old dummy system service
+remove_service()
+{
+    SERVICE_FILE="${SYSTEMDDIR}/auto_offset_z.service"
+    if [ -f $SERVICE_FILE ]; then
+        echo -e "Removing system service..."
+        sudo service auto_offset_z stop
+        sudo systemctl disable auto_offset_z.service
+        sudo rm "$SERVICE_FILE"
+    fi
+    OLD_SERVICE_FILE="${SYSTEMDDIR}/klipper_z_calibration.service"
+    if [ -f $OLD_SERVICE_FILE ]; then
+        echo -e "Removing old system service..."
+        sudo service klipper_z_calibration stop
+        sudo systemctl disable klipper_z_calibration.service
+        sudo rm "$OLD_SERVICE_FILE"
+    fi
+}
+
+# Step 4: restarting Klipper
+restart_klipper()
+{
+    echo "Restarting Klipper..."
+    sudo systemctl restart klipper
+}
+
+# Helper functions
+verify_ready()
+{
+    if [ "$EUID" -eq 0 ]; then
+        echo "This script must not run as root"
+        exit -1
+    fi
+}
+
+# Force script to exit if an error occurs
+set -e
+
+# Find SRCDIR from the pathname of this script
+SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/ && pwd )"
+
+# Parse command line arguments
+while getopts "k:" arg; do
+    case $arg in
+        k) KLIPPER_PATH=$OPTARG;;
+    esac
+done
+
+# Run steps
+verify_ready
+link_extension
+remove_service
+restart_klipper
