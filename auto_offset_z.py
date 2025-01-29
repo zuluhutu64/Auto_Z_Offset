@@ -96,13 +96,13 @@ class AutoOffsetZCalibration:
 
         gcmd.respond_info("AutoOffsetZ: Probing endstop...")
         toolhead.manual_move([self.endstop_x_pos - self.x_offset, self.endstop_y_pos - self.y_offset], self.speed)
-        zendstop = self.printer.lookup_object('bltouch').run_probe()  # Updated to align with the latest probe method
+        zendstop = self.printer.lookup_object('toolhead').probe_position()  # Updated to align with the latest probe method
         if self.z_hop:
             toolhead.manual_move([None, None, self.z_hop], self.z_hop_speed)
 
         gcmd.respond_info("AutoOffsetZ: Probing bed...")
         toolhead.manual_move([self.center_x_pos - self.x_offset, self.center_y_pos - self.y_offset], self.speed)
-        zbed = self.printer.lookup_object('bltouch').run_probe()  # Updated to align with the latest probe method
+        zbed = self.printer.lookup_object('toolhead').probe_position()  # Updated to align with the latest probe method
         if self.z_hop:
             toolhead.manual_move([None, None, self.z_hop], self.z_hop_speed)
 
