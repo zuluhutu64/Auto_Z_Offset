@@ -2,7 +2,6 @@
 Keeping up with the 'fork of a fork of a fork of a fork...'-spirit, I've forked this project to fix a bug I had related to probe positioning in klipper.
 I actually made this fix a while ago before uploading it, so it's missing a bit of refactoring recently done by the previous "forker" ([disPaw](https://github.com/disPaw)).
 I do notice that there was an attempt in the previous fork to fix the same error but it does not seem to work for me on my fresh klipper installation.<br>
-My fix consists of declaring a "probe_obj" (line 85) that is later used to start a "probe_session" (line 135-138 & 148-151) from where we pull our zendstop & zbed results.<br>
 Considering that the original author of 'Auto_Z_Offset' has archived the repo, I might try to keep this fork updated and refactor it a bit... If I'm able to get over the fact that it's written in python :)<br>
 
 ### ***v-------forked readme-------v***
