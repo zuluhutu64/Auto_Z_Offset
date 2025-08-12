@@ -6,7 +6,7 @@
 #
 # Forked by SpookySnek 12 August 2025
 #
-# Version 1.0.0-forked
+# Version 1.0.1-forked (Fixed for newer Klipper versions)
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
@@ -134,10 +134,8 @@ class AutoOffsetZCalibration:
         gcmd.respond_info("AutoOffsetZ: Probing endstop...")
         toolhead.manual_move([self.endstop_x_pos - self.x_offset, self.endstop_y_pos - self.y_offset], self.speed)
 
-        probe_session = probe_obj.start_probe_session(gcmd)
-        probe_session.run_probe(gcmd)
-        zendstop = probe_session.pull_probed_results()[0]
-        probe_session.end_probe_session()
+        # Updated probe call for newer Klipper versions
+        zendstop = probe_obj.probe_position(toolhead, gcmd)
 
         # Perform Z Hop
         if self.z_hop:
@@ -147,10 +145,8 @@ class AutoOffsetZCalibration:
         gcmd.respond_info("AutoOffsetZ: Probing bed...")
         toolhead.manual_move([self.center_x_pos - self.x_offset, self.center_y_pos - self.y_offset], self.speed)
 
-        probe_session = probe_obj.start_probe_session(gcmd)
-        probe_session.run_probe(gcmd)
-        zbed = probe_session.pull_probed_results()[0]
-        probe_session.end_probe_session()
+        # Updated probe call for newer Klipper versions
+        zbed = probe_obj.probe_position(toolhead, gcmd)
 
         # Perform Z Hop
         if self.z_hop:
