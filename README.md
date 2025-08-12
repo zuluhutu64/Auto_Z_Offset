@@ -1,3 +1,11 @@
+## What's Different THIS time? <br>
+Keeping up with the 'fork of a fork of a fork of a fork...'-spirit, I've forked this project to fix a bug I had related to probe positioning in klipper.
+I actually made this fix a while ago before uploading it, so it's missing a bit of refactoring recently done by the previous "forker" ([disPaw](https://github.com/disPaw)).
+I do notice that there was an attempt in the previous fork to fix the same error but it does not seem to work for me on my fresh klipper installation.<br>
+My fix consists of declaring a "probe_obj" (line 85) that is later used to start a "probe_session" (line 135-138 & 148-151) from where we pull our zendstop & zbed results.<br>
+Considering that the original author of 'Auto_Z_Offset' has archived the repo, I might try to keep this fork updated and refactor it a bit... If I'm able to get over the fact that it's written in python :)<br>
+
+### ***v-------forked readme-------v***
 
 ## What's Different? <br>
 This is a fork of [SkyShadex's Auto_Z_Offset](https://github.com/SkyShadex/Auto_Z_Offset) adaptation for the Ender 3 with BLTouch. . . which is a fork of [hawkeyexp's auto_offset_z](https://github.com/hawkeyexp/auto_offset_z) for CoreXY printers with BLTouch. . . which is probably forked from elsewhere, too. At any rate, I noticed the install.sh file might benefit from removal of Moonraker dummy services like [Protoloft's klipper_z_calibration](https://github.com/protoloft/klipper_z_calibration#moonraker-update-manager).
@@ -17,7 +25,7 @@ Login to your pi by ssh. Clone the repo to your homefolder with this command:
 
         
         cd /home/pi
-        git clone https://github.com/disPaw/Auto_Z_Offset.git
+        git clone https://github.com/SpookySnek/Auto_Z_Offset.git
         cd ~/Auto_Z_Offset
         ./install.sh
         
@@ -28,7 +36,7 @@ For further updates you can add it to moonraker's updated manager:
 [update_manager auto_offset_z]
 type: git_repo
 path: ~/Auto_Z_Offset
-origin: https://github.com/disPaw/Auto_Z_Offset.git
+origin: https://github.com/SpookySnek/Auto_Z_Offset.git
 install_script: install.sh
 managed_services: klipper
 </code></pre>
