@@ -1,4 +1,4 @@
-# Perform an easy auto offset calibration with BLTouch or Probe and a pysical Z endstop (CNC-style)
+# Perform an easy auto offset calibration with BLTouch or Probe and a physical Z endstop (CNC-style)
 #
 # Initially developed for use with BLTouch
 #
