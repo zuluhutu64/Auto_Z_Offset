@@ -1,10 +1,12 @@
-# Perform an easy auto offset calibration with BLTouch or Probe and a physical Z endstop (CNC-style)
+# Perform an easy auto offset calibration with BLTouch or Probe and a pysical Z endstop (CNC-style)
 #
 # Initially developed for use with BLTouch
 #
 # Copyright (C) 2022 Marc Hillesheim <marc.hillesheim@outlook.de>
 #
-# Version 0.0.4 / 12.03.2022
+# Forked by SpookySnek 12 August 2025
+#
+# Version 1.0.0-forked
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
@@ -39,9 +41,11 @@ class AutoOffsetZCalibration:
             bltouch = config.getsection('bltouch')
             self.x_offset = bltouch.getfloat('x_offset', note_valid=False)
             self.y_offset = bltouch.getfloat('y_offset', note_valid=False)
-            if (self.x_offset == 0 and self.y_offset == 0):
+            # check if a possible valid offset is set for bltouch
+            if ((self.x_offset == 0) and (self.y_offset == 0)):
                 raise config.error("AutoOffsetZ: Check the x and y offset [bltouch] - they both appear to be zero.")
-            if 'virtual_endstop' in self.endstop_pin:
+            # check if bltouch is set as endstop
+            if ('virtual_endstop' in self.endstop_pin):
                 raise config.error("AutoOffsetZ: BLTouch can't be used as a Z endstop with this command. Use a physical endstop instead.")
 
         # check if a probe is installed
@@ -49,85 +53,143 @@ class AutoOffsetZCalibration:
             probe = config.getsection('probe')
             self.x_offset = probe.getfloat('x_offset', note_valid=False)
             self.y_offset = probe.getfloat('y_offset', note_valid=False)
-            if (self.x_offset == 0 and self.y_offset == 0):
+            # check if a possible valid offset is set for probe
+            if ((self.x_offset == 0) and (self.y_offset == 0)):
                 raise config.error("AutoOffsetZ: Check the x and y offset [probe] - they both appear to be zero.")
-            if 'virtual_endstop' in self.endstop_pin:
-                raise config.error("AutoOffsetZ: Probe can't be used as a Z endstop. Use a physical endstop instead.")
+            # check if probe is set as endstop
+            if ('virtual_endstop' in self.endstop_pin):
+                raise config.error("AutoOffsetZ: Probe can't be used as z endstop. Use a physical endstop instead.")
         else:
-            raise config.error("AutoOffsetZ: No BLTouch or probe configured in your system.")
+            raise config.error("AutoOffsetZ: No BLTouch or probe configured in your system - check your setup.")
 
+        # check if qgl or ztilt is available
         if config.has_section("quad_gantry_level"):
             self.adjusttype = "qgl"
         elif config.has_section("z_tilt"):
             self.adjusttype = "ztilt"
-        elif self.ignore_alignment:
+        elif self.ignore_alignment == 1:
             self.adjusttype = "ignore"
         else:
             raise config.error("AutoOffsetZ: Your config must include [quad_gantry_level] or [z_tilt].")
 
-    def rounding(self, n, decimals=0):
+    # custom round operation based mathematically instead of python default cutting off
+    def rounding(self,n, decimals=0):
         expoN = n * 10 ** decimals
         if abs(expoN) - abs(math.floor(expoN)) < 0.5:
             return math.floor(expoN) / 10 ** decimals
         return math.ceil(expoN) / 10 ** decimals
 
     def cmd_AUTO_OFFSET_Z(self, gcmd):
+        # check if all axes are homed
         toolhead = self.printer.lookup_object('toolhead')
         curtime = self.printer.get_reactor().monotonic()
         kin_status = toolhead.get_kinematics().get_status(curtime)
+        probe_obj = self.printer.lookup_object('probe', None)
+        skip = 0
 
-        if 'x' not in kin_status['homed_axes'] or 'y' not in kin_status['homed_axes'] or 'z' not in kin_status['homed_axes']:
-            raise gcmd.error("You must home X, Y, and Z axes first.")
+        # debug output start #
+        #gcmd.respond_raw("AutoOffsetZ (Homeing Result): %s" % (kin_status))
+        # debug output end #
+
+        if ('x' not in kin_status['homed_axes'] or
+            'y' not in kin_status['homed_axes'] or
+            'z' not in kin_status['homed_axes']):
+            raise gcmd.error("You must home X, Y and Z axes first")
 
         if self.adjusttype == "qgl":
+            # debug output start #
+            #gcmd.respond_raw("AutoOffsetZ (Alignment Type): %s" % (self.adjusttype))
+            # debug output end #
+
+            # check if qgl has applied
             alignment_status = self.printer.lookup_object('quad_gantry_level').get_status(gcmd)
             if alignment_status['applied'] != 1:
                 raise gcmd.error("AutoOffsetZ: Perform quad gantry leveling first.")
 
         elif self.adjusttype == "ztilt":
+            # debug output start #
+            #gcmd.respond_raw("AutoOffsetZ (Alignment Type): %s" % (self.adjusttype))
+            # debug output end #
+
+            # check if ztilt has applied
             alignment_status = self.printer.lookup_object('z_tilt').get_status(gcmd)
             if alignment_status['applied'] != 1:
                 raise gcmd.error("AutoOffsetZ: Perform Z tilt first.")
 
         elif self.adjusttype == "ignore":
-            gcmd.respond_info("AutoOffsetZ: Ignoring alignment as per configuration.")
+            gcmd.respond_info("AutoOffsetZ: Ignoring alignment as requested in the config...")
+        else:
+            raise config.error("AutoOffsetZ: Your printer has no config for [quad_gantry_level] or [z_tilt] which is needed to work correctly.")
 
-        self.gcode_move.cmd_SET_GCODE_OFFSET(self.gcode.create_gcode_command("SET_GCODE_OFFSET", "SET_GCODE_OFFSET", {'Z': 0}))
+        # debug output start #
+        #gcmd.respond_raw("AutoOffsetZ (Alignment Result): %s" % (alignment_status))
+        # debug output end #
 
+        gcmd_offset = self.gcode.create_gcode_command("SET_GCODE_OFFSET",
+                                                      "SET_GCODE_OFFSET",
+                                                      {'Z': 0})
+        self.gcode_move.cmd_SET_GCODE_OFFSET(gcmd_offset)
+
+        # Move with probe or bltouch to endstop XY position and test surface z position
         gcmd.respond_info("AutoOffsetZ: Probing endstop...")
         toolhead.manual_move([self.endstop_x_pos - self.x_offset, self.endstop_y_pos - self.y_offset], self.speed)
-        zendstop = self.printer.lookup_object('toolhead').probe_position()  # Updated to align with the latest probe method
+
+        probe_session = probe_obj.start_probe_session(gcmd)
+        probe_session.run_probe(gcmd)
+        zendstop = probe_session.pull_probed_results()[0]
+        probe_session.end_probe_session()
+
+        # Perform Z Hop
         if self.z_hop:
             toolhead.manual_move([None, None, self.z_hop], self.z_hop_speed)
 
+        # Move with probe or bltouch to center XY position and test surface z position
         gcmd.respond_info("AutoOffsetZ: Probing bed...")
         toolhead.manual_move([self.center_x_pos - self.x_offset, self.center_y_pos - self.y_offset], self.speed)
-        zbed = self.printer.lookup_object('toolhead').probe_position()  # Updated to align with the latest probe method
+
+        probe_session = probe_obj.start_probe_session(gcmd)
+        probe_session.run_probe(gcmd)
+        zbed = probe_session.pull_probed_results()[0]
+        probe_session.end_probe_session()
+
+        # Perform Z Hop
         if self.z_hop:
             toolhead.manual_move([None, None, self.z_hop], self.z_hop_speed)
 
+        # calcualtion offset
         endstopswitch = 0.5
         diffbedendstop = zendstop[2] - zbed[2]
-        offset = self.rounding((0 - diffbedendstop + endstopswitch) + self.offsetadjust, 3)
+        #offset = (0 - diffbedendstop  + endstopswitch) + self.offsetadjust
+        offset = self.rounding((0 - diffbedendstop  + endstopswitch) + self.offsetadjust,3)
 
-        gcmd.respond_info(f"AutoOffsetZ:\nBed: {zbed[2]:.3f}\nEndstop: {zendstop[2]:.3f}\nDiff: {diffbedendstop:.3f}\nManual Adjust: {self.offsetadjust:.3f}\nTotal Calculated Offset: {offset:.3f}")
+        gcmd.respond_info("AutoOffsetZ:\nBed: %.3f\nEndstop: %.3f\nDiff: %.3f\nManual Adjust: %.3f\nTotal Calculated Offset: %.3f" % (zbed[2],zendstop[2],diffbedendstop,self.offsetadjust,offset,))
 
+        # failsave
         if offset < self.offset_min or offset > self.offset_max:
-            raise gcmd.error(f"AutoOffsetZ: Calculated offset is out of limits (Min: {self.offset_min:.3f} mm | Max: {self.offset_max:.3f} mm). Aborting...")
+            raise gcmd.error("AutoOffsetZ: Your calculated offset is out of config limits! (Min: %.3f mm | Max: %.3f mm) - abort..." % (self.offset_min,self.offset_max))
 
         if self.endstop_min != 0 and zendstop[2] < self.endstop_min:
-            raise gcmd.error(f"AutoOffsetZ: Endstop value is below limit (Min: {self.endstop_min:.3f} mm | Measured: {zendstop[2]:.3f} mm). Aborting...")
+            raise gcmd.error("AutoOffsetZ: Your endstop value is out of config limits! (Min: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_min,zendstop[2]))
 
         if self.endstop_max != 0 and zendstop[2] > self.endstop_max:
-            raise gcmd.error(f"AutoOffsetZ: Endstop value is above limit (Max: {self.endstop_max:.3f} mm | Measured: {zendstop[2]:.3f} mm). Aborting...")
+            raise gcmd.error("AutoOffsetZ: Your endstop value is out of config limits! (Max: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_max,zendstop[2]))
 
         self.set_offset(offset)
 
-    cmd_AUTO_OFFSET_Z_help = "Test endstop and bed surface to calculate G-code offset for Z."
+    cmd_AUTO_OFFSET_Z_help = "Test endstop and bed surface to calcualte g-code offset for Z"
 
     def set_offset(self, offset):
-        self.gcode_move.cmd_SET_GCODE_OFFSET(self.gcode.create_gcode_command("SET_GCODE_OFFSET", "SET_GCODE_OFFSET", {'Z': 0}))
-        self.gcode_move.cmd_SET_GCODE_OFFSET(self.gcode.create_gcode_command("SET_GCODE_OFFSET", "SET_GCODE_OFFSET", {'Z': offset}))
+        # reset pssible existing offset to zero
+        gcmd_offset = self.gcode.create_gcode_command("SET_GCODE_OFFSET",
+                                                      "SET_GCODE_OFFSET",
+                                                      {'Z': 0})
+        self.gcode_move.cmd_SET_GCODE_OFFSET(gcmd_offset)
+        # set new offset
+        gcmd_offset = self.gcode.create_gcode_command("SET_GCODE_OFFSET",
+                                                      "SET_GCODE_OFFSET",
+                                                      {'Z': offset})
+        self.gcode_move.cmd_SET_GCODE_OFFSET(gcmd_offset)
+
 
 def load_config(config):
     return AutoOffsetZCalibration(config)
