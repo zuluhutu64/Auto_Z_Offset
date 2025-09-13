@@ -1,3 +1,39 @@
+## What's Different THIS time AGAIN? <br>
+Keeping up with the 'fork of a fork of a fork of a fork...'-spirit, I've forked this project to fix a bug I had related to probe positioning in klipper.
+The original code did seem to work with my version of klipper (At least with my BL Touch). So I rewrote the probing section to use the onboard ProbeHelper class.
+
+  ## New Requirements:
+  1) Physical Z-Endstop mounted as a pin - it is our reference point and is always Z 0.0 for calculations.
+  2) BLTouch as probe - the sensor to check the distance between endstop and bed to calc the offset
+  3) Accurate X and Y probe offsets
+  4) configured [save_z_home]
+  5) updateded parameters in [auto_offset_x]
+
+You have to update the parameters in printer.cfg. The probe points are now stored in probe_points
+
+<pre><code>
+[auto_offset_z]
+speed: 50                       # X/Y travel speed between the two points
+ignore_alignment: False         # Optional - this allows ignoring the presence of z-tilt or quad gantry leveling config section
+offset_min: -1                  # Optional - by default -1 is used - used as failsave to raise an error if offset is lower than this value
+offset_max: 1                   # Optional - by default 1 is used - used as failsave to raise an error if offset is higher than this value
+endstop_min: 0                  # Optional - by default disabled (0) - used as failsave to raise an error if endstop is lower than this value
+endstop_max: 0                  # Optional - by default disabled (0) - used as failsave to raise an error if endstop is higher than this value
+offsetadjust: 0.045             # Manual offset correction option - start with zero and optimize during print with babysteps
+                                #  1) If you need to lower the nozzle from -0.71 to -0.92 for example your value is -0.21.
+                                #  2) If you need to move more away from bed add a positive value.
+horizontal_move_z: 5            #for probe_points_helper, was z_hop parameter
+probe_points: -8, 77            #for probe_points_helper, First line: Physical endstop nozzle over pin, 2nd: Center of bed for example
+        150,150 
+endstopswitch: 0.5             #was hardcoded, now as config parameter. Distance of switch trigger point
+</code></pre>
+
+## Hints for setting using this extra:
+
+After doing a first calibration, test the offset with the classic paper test. Probably you have to adjust "offsetadjust" for the trigger distance of your z-endstop.
+
+### ***v-------forked readme-------v***
+
 ## What's Different THIS time? <br>
 Keeping up with the 'fork of a fork of a fork of a fork...'-spirit, I've forked this project to fix a bug I had related to probe positioning in klipper.
 I actually made this fix a while ago before uploading it, so it's missing a bit of refactoring recently done by the previous "forker" ([disPaw](https://github.com/disPaw)).
