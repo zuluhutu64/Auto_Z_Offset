@@ -5,23 +5,19 @@
 # Copyright (C) 2022 Marc Hillesheim <marc.hillesheim@outlook.de>
 #
 # Forked by SpookySnek 12 August 2025
-#
-# Version 1.0.2-forked (Fixed for current Klipper API)
+# Forked by Zuluhutu 13 September 2025
+# Version 1.0.3-forked (Rewrote for using ProbeHelper)
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-from . import probe
+import logging
 import math
-
+from . import probe
+ 
 class AutoOffsetZCalibration:
     def __init__(self, config):
         self.printer = config.get_printer()
-        x_pos_center, y_pos_center = config.getfloatlist("center_xy_position", count=2)
-        x_pos_endstop, y_pos_endstop = config.getfloatlist("endstop_xy_position", count=2)
-        self.center_x_pos, self.center_y_pos = x_pos_center, y_pos_center
-        self.endstop_x_pos, self.endstop_y_pos = x_pos_endstop, y_pos_endstop
-        self.z_hop = config.getfloat("z_hop", default=10.0)
-        self.z_hop_speed = config.getfloat('z_hop_speed', 15., above=0.)
+
         zconfig = config.getsection('stepper_z')
         self.max_z = zconfig.getfloat('position_max', note_valid=False)
         self.ignore_alignment = config.getboolean('ignore_alignment', False)
@@ -34,8 +30,19 @@ class AutoOffsetZCalibration:
         self.endstop_max = config.getfloat('endstop_max', 0)
         self.gcode = self.printer.lookup_object('gcode')
         self.gcode_move = self.printer.lookup_object('gcode_move')
-        self.gcode.register_command("AUTO_OFFSET_Z", self.cmd_AUTO_OFFSET_Z, desc=self.cmd_AUTO_OFFSET_Z_help)
-
+        #added
+        self.endstopswitch = config.getfloat('endstopswitch', 0.5)
+       
+       # TODO: verify that z_hop section
+        if config.has_section("safe_z_home"):
+            safeZHome = config.getsection('safe_z_home')
+            self.zHop = safeZHome.getfloat('z_hop', note_valid=False)
+            # TODO: check if a possible valid offset is set 
+            if (self.zHop == 0) or (self.zHop is None):
+                raise config.error("AutoOffsetZ: z_hop has to be set in safe_z_home to avoid crashing the probe.")
+        else:
+            raise config.error("AutoOffsetZ: X safe_z_home has to be definied for save probing.")
+            
         # check if a BLTouch is installed
         if config.has_section("bltouch"):
             bltouch = config.getsection('bltouch')
@@ -50,9 +57,9 @@ class AutoOffsetZCalibration:
 
         # check if a probe is installed
         elif config.has_section("probe"):
-            probe = config.getsection('probe')
-            self.x_offset = probe.getfloat('x_offset', note_valid=False)
-            self.y_offset = probe.getfloat('y_offset', note_valid=False)
+            probeCfg = config.getsection('probe')
+            self.x_offset = probeCfg.getfloat('x_offset', note_valid=False)
+            self.y_offset = probeCfg.getfloat('y_offset', note_valid=False)
             # check if a possible valid offset is set for probe
             if ((self.x_offset == 0) and (self.y_offset == 0)):
                 raise config.error("AutoOffsetZ: Check the x and y offset [probe] - they both appear to be zero.")
@@ -72,6 +79,30 @@ class AutoOffsetZCalibration:
         else:
             raise config.error("AutoOffsetZ: Your config must include [quad_gantry_level] or [z_tilt].")
 
+        #setting up probeHelper. Doing this after the other checks as the offsets are already loaded
+        
+        self.probePoints = config.getlists('probe_points', seps=(',', '\n'),
+                                                parser=float, count=2)
+        
+        #somehow probeHelper doesn't respect the settings of the offsets. doing it manually.
+        self.pointsEndstop = list(self.probePoints[0])
+        self.pointsBed = list(self.probePoints[1])
+        self.pointsEndstop[0] -= self.x_offset
+        self.pointsEndstop[1] -= self.y_offset
+        self.pointsBed[0] -= self.x_offset
+        self.pointsBed[1] -= self.y_offset
+        self.probePoints = (self.pointsEndstop,self.pointsBed)
+        
+        self.probe_helper = probe.ProbePointsHelper(config,self.probe_finalize, default_points=self.probePoints)
+        self.probe_helper.minimum_points(2)
+        #self.probe_helper.use_xy_offsets = True    #does this do anything at all??
+        self.gcode.register_command("AUTO_OFFSET_Z", self.cmd_AUTO_OFFSET_Z, desc=self.cmd_AUTO_OFFSET_Z_help)
+
+        logging.info("AutoOffsetZ: init done")
+
+
+
+
     # custom round operation based mathematically instead of python default cutting off
     def rounding(self,n, decimals=0):
         expoN = n * 10 ** decimals
@@ -88,7 +119,7 @@ class AutoOffsetZCalibration:
         skip = 0
 
         # debug output start #
-        #gcmd.respond_raw("AutoOffsetZ (Homeing Result): %s" % (kin_status))
+        # gcmd.respond_raw("AutoOffsetZ (Homeing Result): %s" % (kin_status))
         # debug output end #
 
         if ('x' not in kin_status['homed_axes'] or
@@ -122,7 +153,7 @@ class AutoOffsetZCalibration:
             raise config.error("AutoOffsetZ: Your printer has no config for [quad_gantry_level] or [z_tilt] which is needed to work correctly.")
 
         # debug output start #
-        #gcmd.respond_raw("AutoOffsetZ (Alignment Result): %s" % (alignment_status))
+        # gcmd.respond_raw("AutoOffsetZ (Alignment Result): %s" % (alignment_status))
         # debug output end #
 
         gcmd_offset = self.gcode.create_gcode_command("SET_GCODE_OFFSET",
@@ -130,55 +161,43 @@ class AutoOffsetZCalibration:
                                                       {'Z': 0})
         self.gcode_move.cmd_SET_GCODE_OFFSET(gcmd_offset)
 
-        # Move with probe or bltouch to endstop XY position and test surface z position
-        gcmd.respond_info("AutoOffsetZ: Probing endstop...")
-        toolhead.manual_move([self.endstop_x_pos - self.x_offset, self.endstop_y_pos - self.y_offset], self.speed)
+        #start probing using the probe_helper class
+        self.probe_helper.start_probe(gcmd)
 
-        # Updated probe call for current Klipper API
-        probe_obj.multi_probe_begin()
-        try:
-            zendstop = probe_obj.run_probe(gcmd)
-        finally:
-            probe_obj.multi_probe_end()
-
-        # Perform Z Hop
-        if self.z_hop:
-            toolhead.manual_move([None, None, self.z_hop], self.z_hop_speed)
-
-        # Move with probe or bltouch to center XY position and test surface z position
-        gcmd.respond_info("AutoOffsetZ: Probing bed...")
-        toolhead.manual_move([self.center_x_pos - self.x_offset, self.center_y_pos - self.y_offset], self.speed)
-
-        # Updated probe call for current Klipper API
-        probe_obj.multi_probe_begin()
-        try:
-            zbed = probe_obj.run_probe(gcmd)
-        finally:
-            probe_obj.multi_probe_end()
-
-        # Perform Z Hop
-        if self.z_hop:
-            toolhead.manual_move([None, None, self.z_hop], self.z_hop_speed)
-
+    def probe_finalize(self, offsets, positions):
         # calcualtion offset
-        endstopswitch = 0.5
-        diffbedendstop = zendstop[2] - zbed[2]
-        #offset = (0 - diffbedendstop  + endstopswitch) + self.offsetadjust
-        offset = self.rounding((0 - diffbedendstop  + endstopswitch) + self.offsetadjust,3)
-
-        gcmd.respond_info("AutoOffsetZ:\nBed: %.3f\nEndstop: %.3f\nDiff: %.3f\nManual Adjust: %.3f\nTotal Calculated Offset: %.3f" % (zbed[2],zendstop[2],diffbedendstop,self.offsetadjust,offset,))
+        
+        logging.info("Calculating AutoOffsetZ  with (positions): %s", positions)
+        logging.info("Calculating AutoOffsetZ  with (offsets): %s", offsets) 
+     
+        gcode = self.printer.lookup_object('gcode')
+        
+        zendstop = positions[0][2]
+        zbed = positions[1][2]
+        diffbedendstop = zendstop - zbed
+        
+        logging.info("Calculating AutoOffsetZ  with zbed: %s", zbed) 
+        logging.info("Calculating AutoOffsetZ  with zendstop: %s", zendstop)
+        logging.info("Calculating AutoOffsetZ  with diffbedendstop: %s", diffbedendstop) 
+        
+        offset = self.rounding((0 - diffbedendstop  + self.endstopswitch) + self.offsetadjust,3)
+        logging.info("Calculating AutoOffsetZ  with (offset): %s", offset) 
+        
+        gcode.respond_info("AutoOffsetZ:\nBed: %.3f\nEndstop: %.3f\nDiff: %.3f\nManual Adjust: %.3f\nTotal Calculated Offset: %.3f" % (zbed,zendstop,diffbedendstop,self.offsetadjust,offset,))
+               
 
         # failsave
         if offset < self.offset_min or offset > self.offset_max:
-            raise gcmd.error("AutoOffsetZ: Your calculated offset is out of config limits! (Min: %.3f mm | Max: %.3f mm) - abort..." % (self.offset_min,self.offset_max))
+            raise gcode.error("AutoOffsetZ: Your calculated offset is out of config limits! (Min: %.3f mm | Max: %.3f mm) - abort..." % (self.offset_min,self.offset_max))
 
         if self.endstop_min != 0 and zendstop[2] < self.endstop_min:
-            raise gcmd.error("AutoOffsetZ: Your endstop value is out of config limits! (Min: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_min,zendstop[2]))
+            raise gcode.error("AutoOffsetZ: Your endstop value is out of config limits! (Min: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_min,zendstop[2]))
 
         if self.endstop_max != 0 and zendstop[2] > self.endstop_max:
-            raise gcmd.error("AutoOffsetZ: Your endstop value is out of config limits! (Max: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_max,zendstop[2]))
+            raise gcode.error("AutoOffsetZ: Your endstop value is out of config limits! (Max: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_max,zendstop[2]))
 
         self.set_offset(offset)
+
 
     cmd_AUTO_OFFSET_Z_help = "Test endstop and bed surface to calcualte g-code offset for Z"
 
