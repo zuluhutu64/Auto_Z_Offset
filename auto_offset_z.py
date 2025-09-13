@@ -166,9 +166,8 @@ class AutoOffsetZCalibration:
 
     def probe_finalize(self, offsets, positions):
         # calcualtion offset
-        
-        logging.info("Calculating AutoOffsetZ  with (positions): %s", positions)
-        logging.info("Calculating AutoOffsetZ  with (offsets): %s", offsets) 
+        #logging.info("Calculating AutoOffsetZ  with (positions): %s", positions)
+        #logging.info("Calculating AutoOffsetZ  with (offsets): %s", offsets) 
      
         gcode = self.printer.lookup_object('gcode')
         
@@ -176,12 +175,12 @@ class AutoOffsetZCalibration:
         zbed = positions[1][2]
         diffbedendstop = zendstop - zbed
         
-        logging.info("Calculating AutoOffsetZ  with zbed: %s", zbed) 
-        logging.info("Calculating AutoOffsetZ  with zendstop: %s", zendstop)
-        logging.info("Calculating AutoOffsetZ  with diffbedendstop: %s", diffbedendstop) 
+        #logging.info("Calculating AutoOffsetZ  with zbed: %s", zbed) 
+        #logging.info("Calculating AutoOffsetZ  with zendstop: %s", zendstop)
+        #logging.info("Calculating AutoOffsetZ  with diffbedendstop: %s", diffbedendstop) 
         
         offset = self.rounding((0 - diffbedendstop  + self.endstopswitch) + self.offsetadjust,3)
-        logging.info("Calculating AutoOffsetZ  with (offset): %s", offset) 
+        #logging.info("Calculating AutoOffsetZ  with (offset): %s", offset) 
         
         gcode.respond_info("AutoOffsetZ:\nBed: %.3f\nEndstop: %.3f\nDiff: %.3f\nManual Adjust: %.3f\nTotal Calculated Offset: %.3f" % (zbed,zendstop,diffbedendstop,self.offsetadjust,offset,))
                
@@ -197,7 +196,6 @@ class AutoOffsetZCalibration:
             raise gcode.error("AutoOffsetZ: Your endstop value is out of config limits! (Max: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_max,zendstop[2]))
 
         self.set_offset(offset)
-
 
     cmd_AUTO_OFFSET_Z_help = "Test endstop and bed surface to calcualte g-code offset for Z"
 
