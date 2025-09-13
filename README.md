@@ -1,6 +1,6 @@
 ## What's Different THIS time AGAIN? <br>
 Keeping up with the 'fork of a fork of a fork of a fork...'-spirit, I've forked this project to fix a bug I had related to probe positioning in klipper.
-The original code did seem to work with my version of klipper (At least with my BL Touch). So I rewrote the probing section to use the onboard ProbeHelper class.
+The original code didn't seem to work with my version of klipper (At least with my BL Touch). So I rewrote the probing section to use the onboard ProbeHelper class.
 
   ## New Requirements:
   1) Physical Z-Endstop mounted as a pin - it is our reference point and is always Z 0.0 for calculations.
