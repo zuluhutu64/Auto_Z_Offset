@@ -29,8 +29,9 @@ endstopswitch: 0.5             #was hardcoded, now as config parameter. Distance
 </code></pre>
 
 ## Hints for setting using this extra:
-
-After doing a first calibration, test the offset with the classic paper test. Probably you have to adjust "offsetadjust" for the trigger distance of your z-endstop.
+- Depended on the size of your Z endstop, make sure that your x and y endstop have a high accuracy. I had a very small diameter to probe with the bl touch and the pin of Z had a very slight slope on the rim.
+  Y endstop was not tighted down hard enough so z probepoint moved slightly. But enough that auto_offset_z differed in the range of ~0.05.
+- After doing a first calibration, test the offset with the classic paper test. Probably you have to adjust "offsetadjust" for the trigger distance of your z-endstop.
 
 ### ***v-------forked readme-------v***
 
